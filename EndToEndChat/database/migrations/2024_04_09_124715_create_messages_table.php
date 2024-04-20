@@ -18,14 +18,14 @@ return new class extends Migration
             $table->unsignedBigInteger('recipient_id');
             $table->text('content');
 
-
             $table->boolean('is_delivered')->default(false);
             $table->boolean('is_read')->default(false);
 
-            $table->text('session_key_enc_sender');
-            $table->text('session_key_enc_recipient');
+            $table->text('sender_symm_key_enc'); 
+            $table->text('recipient_symm_key_enc');
 
-            
+            $table->binary('iv'); // binary because iv doesnt have to be read 
+
             $table->timestamps();
 
             $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');

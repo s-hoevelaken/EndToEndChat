@@ -6,40 +6,34 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class MessageController extends Controller
 {
     public function sendMessage(Request $request)
     {
-        // Validate the request data
         $validated = $request->validate([
             'recipient_id' => 'required|exists:users,id',
             'content' => 'required|string',
+            'sender_symm_key_enc' => 'required|string',
+            'recipient_symm_key_enc' => 'required|string',
+            'iv' => 'required|string',
         ]);
-
-        // Create and save the message
+        
+        
         $message = new Message();
-        $message->sender_id = auth()->id(); // or any other way you're determining the sender
+        $message->sender_id = auth()->id();
         $message->recipient_id = $validated['recipient_id'];
         $message->content = $validated['content'];
+        $message->sender_symm_key_enc = $validated['sender_symm_key_enc'];
+        $message->recipient_symm_key_enc = $validated['recipient_symm_key_enc'];
+        $message->iv = $validated['iv'];
         $message->save();
-
-        // Respond with the created message or a success status
+        
         return response()->json(['message' => 'Message sent successfully', 'data' => $message], 200);
     }
-
-
-
-    public function getMessagesWithUser($userId)
-    {
-        $messages = Message::where(function ($query) use ($userId) {
-            $query->where('sender_id', Auth::id())->where('recipient_id', $userId);
-        })->orWhere(function ($query) use ($userId) {
-            $query->where('sender_id', $userId)->where('recipient_id', Auth::id());
-        })->get();
-
-        return response()->json($messages);
-    }
+    
 
     public function getChatMessages($friendId)
     {
@@ -48,8 +42,9 @@ class MessageController extends Controller
             $q->where('sender_id', $userId)->where('recipient_id', $friendId);
         })->orWhere(function ($q) use ($userId, $friendId) {
             $q->where('sender_id', $friendId)->where('recipient_id', $userId);
-        })->get();
+        })->orderBy('created_at', 'asc')
+          ->paginate(1);
     
         return response()->json($messages);
-    }
+    }    
 }

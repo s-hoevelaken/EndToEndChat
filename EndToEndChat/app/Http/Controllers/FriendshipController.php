@@ -15,7 +15,7 @@ class FriendshipController extends Controller
         ], [
             'name.required' => 'Name is required.',
             'name.string' => 'Name must be a string.',
-            'name.exists' => 'This name does not exist in our records.',
+            'name.exists' => 'This name doexs not exist in our records.',
         ]);
         
     
@@ -77,9 +77,7 @@ class FriendshipController extends Controller
         ->where('status', 'accepted')
         ->get()
         ->map(function ($friendship) use ($userId) {
-            // Determine the friend's user ID
             $friendId = $friendship->requester_id == $userId ? $friendship->addressee_id : $friendship->requester_id;
-            // Fetch the friend's name from the users table
             $friendName = User::where('id', $friendId)->value('name');
             return [
                 'id' => $friendId,
@@ -89,7 +87,7 @@ class FriendshipController extends Controller
     
         return response()->json($friends);
     }
-    
+
 
 
 
@@ -104,5 +102,14 @@ class FriendshipController extends Controller
         $friendship->update(['status' => 'accepted']);
         
         return response()->json(['message' => 'Friend request accepted']);
+    }
+
+    public function getPublicKeyById($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        return response()->json(['public_key' => $user->publicKey]);
     }
 }

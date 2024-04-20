@@ -148,6 +148,8 @@
                 });
             }
 
+
+
             function testRetrievePrivateKey() {
                 retrievePrivateKeyFromIndexedDB()
                 .catch((error) => {
@@ -181,14 +183,14 @@
             function acceptFriendRequest(requestId) {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                fetch(`/friend-requests/accept/${requestId}`, { // Adjust the URL if it's supposed to be an API route
+                fetch(`/friend-requests/accept/${requestId}`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken, // Include the CSRF token in the request headers
+                        'X-CSRF-TOKEN': csrfToken,
                     },
-                    credentials: 'same-origin', // Ensure cookies, including session cookies, are sent with the request
+                    credentials: 'same-origin',
                 })
                 .then(response => {
                     if (!response.ok) {

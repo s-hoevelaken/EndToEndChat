@@ -87,8 +87,6 @@
         }
     }
 
-    // Attaching the setupKeys function to the form's submit event
-// Attaching the setupKeys function to the form's submit event
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('registrationForm').addEventListener('submit', async function(e) {
         e.preventDefault();
