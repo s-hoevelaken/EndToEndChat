@@ -4,7 +4,7 @@
 <div class=" flex flex-col main-content bg-gray-800">
     <!-- Main Content Area -->
     <div class="flex flex-1 overflow-hidden">
-        <!-- Friends List -->
+
         <div class="w-1/4 bg-gray-700 overflow-y-auto">
     <h2 class="text-white text-lg p-5">Friends</h2>
     <ul id="friendsList" class="divide-y divide-gray-600">
@@ -16,7 +16,7 @@
         <div class="flex-1 p-10 overflow-y-auto">
             <div class="flex flex-col justify-between h-full">
                 <!-- Chat Messages -->
-                <div class="chat-messages overflow-y-auto mb-4">
+                <div class="chat-messages flex flex-col overflow-y-auto p-2 space-y-reverse space-y-2">
                     <!-- Dynamic Chat Messages Here -->
                 </div>
                 <!-- Message Input -->
@@ -29,6 +29,11 @@
 </div>
 @endsection
 <style>
+    html,body {
+        height:100%;
+        padding:0;
+        margin:0;
+    }
     .main-content 
     {
         height: calc(100vh - 65px) !important;
@@ -63,13 +68,43 @@ let selectedFriendId = null;
             console.error('Error loading friends:', error);
         }
     }  
-    
-    
 
-async function openChat(friendId) {
-    selectedFriendId = friendId;
+async function markMessageAsRead(messageId) {
     try {
-        const response = await fetch(`/api/chat/${friendId}`, {
+        const response = await fetch(`/api/messages/read/${messageId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            },
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to mark message as read');
+        }
+        console.log('Message marked as read:', data);
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+    }
+}
+
+
+
+
+let currentPage = 1;
+let totalPages = 1;
+
+async function openChat(friendId, keepScrollPosition = false) {
+    selectedFriendId = friendId;
+    if (currentPage > totalPages) {
+        console.log('All messages have been loaded.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/chat/${friendId}?page=${currentPage}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
@@ -77,37 +112,52 @@ async function openChat(friendId) {
             },
         });
         const result = await response.json();
-        if (!result.data) {
-            console.error('No messages found or end of message list.');
-            return; // Exit if there are no messages
+        if (!result.data || result.data.length === 0) {
+            console.error('No more messages to load.');
+            return;
         }
 
+        currentPage += 1;
+        totalPages = result.last_page;
+
         const messages = result.data;
-        console.log(messages);
         const privateKey = await getPrivateKey();
 
         const messagesContainer = document.querySelector('.chat-messages');
-        messagesContainer.innerHTML = '';
-        let mess = 0;
+        let oldScrollHeight = messagesContainer.scrollHeight;
+        let foundReadMessage = false;
         for (const message of messages) {
-            mess += 1;
-            if (!message.iv || !message.content) {
-                console.error("Message IV or content missing:", message);
-                continue; // Skip processing the message if iv or content is missing
-            }
-
             let symmKeyEnc = message.sender_id === authUserId ? message.sender_symm_key_enc : message.recipient_symm_key_enc;
             let decryptedSymmKey = await decryptSymmetricKey(symmKeyEnc, privateKey);
             let decryptedMessage = await decryptMessage(message.content, decryptedSymmKey, message.iv);
-
-            console.log(mess);
-            console.log(decryptedMessage);
 
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
             messageElement.textContent = decryptedMessage;
             messageElement.className += message.sender_id === authUserId ? ' sent' : ' received';
-            messagesContainer.appendChild(messageElement);
+            messagesContainer.prepend(messageElement);
+            
+            if (foundReadMessage) continue;
+            
+            if (!message.iv || !message.content) {
+                console.error("Message IV or content missing:", message);
+                continue;
+            }
+            
+            if (message.is_read) {
+                foundReadMessage = true;
+                continue;
+            }
+            
+            if (message.recipient_id === authUserId) {
+                markMessageAsRead(message.id);
+            }
+        };
+
+        if (keepScrollPosition) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight - oldScrollHeight;
+        } else {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
     } catch (error) {
         console.error('Error opening chat:', error);
@@ -335,16 +385,13 @@ async function sendMessage() {
 
     try {
         const symmetricKey = await generateSymmetricKey();
-
         const { encryptedMessage, iv } = await encryptMessage(message, symmetricKey);
-
         const senderPublicKey = await getPublicKeyById(authUserId);
         const recipientPublicKey = await getPublicKeyById(selectedFriendId);
-
         const senderEncryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, senderPublicKey);
         const recipientEncryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, recipientPublicKey);
 
-        fetch('/send-message', {
+        const response = await fetch('/send-message', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -357,18 +404,31 @@ async function sendMessage() {
                 sender_symm_key_enc: senderEncryptedSymmetricKey,
                 recipient_symm_key_enc: recipientEncryptedSymmetricKey,
             }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            openChat(selectedFriendId);
-        })
-        .catch(error => console.error('Error sending message:', error));
+        });
 
-        messageInput.value = '';
+        const data = await response.json();
+        if (response.ok) {
+            const decryptedMessage = await decryptMessage(data.data.content, symmetricKey, iv);
+            displayMessage(decryptedMessage, true);
+            messageInput.value = '';
+        } else {
+            throw new Error(data.message || 'Failed to send message');
+        }
     } catch (error) {
-        console.error('Encryption error:', error);
+        console.error('Encryption error or sending failed:', error);
     }
 }
+
+function displayMessage(message, isSender) {
+    const messagesContainer = document.querySelector('.chat-messages');
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    messageElement.textContent = message;
+    messageElement.className += isSender ? ' sent' : ' received';
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
 
 
 
@@ -376,6 +436,11 @@ async function sendMessage() {
 document.addEventListener('DOMContentLoaded', () => {
     loadFriends();
     document.getElementById('sendButton').addEventListener('click', sendMessage);
-    });
 
+    document.querySelector('.chat-messages').addEventListener('scroll', async function() {
+        if (this.scrollTop === 0 && currentPage <= totalPages) {
+            await openChat(selectedFriendId, true);
+        }
+    });
+});
 </script>

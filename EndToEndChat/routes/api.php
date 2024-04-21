@@ -29,3 +29,5 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/chat/{friendId}', [MessageController::class, 'getChatMessages']);
 
 Route::get('/user/public-key/{id}', [FriendshipController::class, 'getPublicKeyById']);
+
+Route::patch('/messages/read/{id}', [MessageController::class, 'markAsRead']);

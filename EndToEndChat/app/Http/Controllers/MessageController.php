@@ -42,9 +42,27 @@ class MessageController extends Controller
             $q->where('sender_id', $userId)->where('recipient_id', $friendId);
         })->orWhere(function ($q) use ($userId, $friendId) {
             $q->where('sender_id', $friendId)->where('recipient_id', $userId);
-        })->orderBy('created_at', 'asc')
-          ->paginate(1);
+        })->orderBy('created_at', 'desc')
+          ->paginate(30);
     
         return response()->json($messages);
+    }    
+
+    public function markAsRead($id)
+    {
+        $message = Message::find($id);
+    
+        if (!$message) {
+            return response()->json(['message' => 'Message not found'], 404);
+        }
+    
+        if ($message->recipient_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+    
+        $message->is_read = true;
+        $message->save();
+    
+        return response()->json(['message' => 'Message marked as read'], 200);
     }    
 }
