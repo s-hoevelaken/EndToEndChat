@@ -16,6 +16,16 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                'mainBackgroundColor': '#27292D',
+                'hoverFriendsListColor': '#2C2E33',
+                'customBlue': '#3A84F7',
+                'separatorBlue': '#323336',
+                'lastMessageColorFriendsList': '#626664',
+                'FriendNameTextColor': '#CECECF',
+                'borderColorGrey': '#323336',
+                'backgroundMessagesField': '#303236',
+            }
         },
     },
 

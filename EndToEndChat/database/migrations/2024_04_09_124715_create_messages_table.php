@@ -18,7 +18,6 @@ return new class extends Migration
             $table->unsignedBigInteger('recipient_id');
             $table->text('content');
 
-            $table->boolean('is_delivered')->default(false);
             $table->boolean('is_read')->default(false);
 
             $table->text('sender_symm_key_enc'); 

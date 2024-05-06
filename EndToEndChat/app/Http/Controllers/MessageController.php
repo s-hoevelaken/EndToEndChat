@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Message;
 use App\Models\User;
+use App\Models\Block;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -20,6 +21,18 @@ class MessageController extends Controller
             'recipient_symm_key_enc' => 'required|string',
             'iv' => 'required|string',
         ]);
+
+
+        $senderId = auth()->id();
+        $recipientId = $request->recipient_id;
+
+        $isBlocked = Block::where('blocker_id', $recipientId)
+                                                ->where('blocked_id', $senderId)
+                                                ->exists();
+
+        if ($isBlocked) {
+            return response()->json(['message' => 'Message sending failed. The user has blocked you.'], 403);
+        }
         
         
         $message = new Message();
@@ -65,4 +78,28 @@ class MessageController extends Controller
     
         return response()->json(['message' => 'Message marked as read'], 200);
     }    
+
+
+    public function getLastMessage($friendId) 
+    {
+        $userId = auth()->id();
+
+        $message = Message::where(function ($query) use ($userId, $friendId) {
+            $query->where('sender_id', $userId)->where('recipient_id', $friendId);
+        })->orWhere(function ($query) use ($userId, $friendId) {
+            $query->where('sender_id', $friendId)->where('recipient_id', $userId);
+        })->latest('created_at')->first();
+    
+        if (!$message) {
+            return response()->json([
+                'message' => 'No messages found',
+                'data' => [
+                    'content' => '',
+                    'created_at' => now()->toDateTimeString()
+                ]
+            ]);
+        }    
+       
+        return response()->json(['message' => 'Last message retrieved successfully', 'data' => $message]);
+    }
 }
