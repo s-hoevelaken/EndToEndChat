@@ -273,14 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function setupMessageScroll() {
-const chatMessages = document.querySelector('.chat-messages');
-const threshold = 150;
+    const chatMessages = document.querySelector('.chat-messages');
+    const threshold = 150;
 
-chatMessages.addEventListener('scroll', async function() {
-    if (this.scrollTop < threshold && currentPage <= totalPages && !isChatLoading) {
-        await openChat(selectedFriendId, true);
-    }
-});
+    chatMessages.addEventListener('scroll', async function() {
+        if (this.scrollTop < threshold && currentPage <= totalPages && !isChatLoading) {
+            await openChat(selectedFriendId, true);
+        }
+    });
 }
 
 
@@ -478,6 +478,33 @@ async function removeFriend(friendId) {
 let selectedFriendId = null;
 let readStatusDisplayed = false;
 
+
+function updateSelectedFriend(FriendId) {
+    if (selectedFriendId !== null) {
+        const oldSelectedElement = document.getElementById(`friend-${selectedFriendId}`);
+        if (oldSelectedElement) {
+            oldSelectedElement.classList.remove('selectedFriendGradient', 'border-customBlue', 'border-l-4');
+            oldSelectedElement.classList.add('bg-mainBackgroundColor', 'hover:bg-hoverFriendsListColor');
+        } else {
+            console.log(`Previous friend ID ${selectedFriendId} not found in DOM.`);
+        }
+    }
+
+    const newSelectedElement = document.getElementById(`friend-${FriendId}`);
+    if (newSelectedElement) {
+        newSelectedElement.classList.remove('bg-mainBackgroundColor', 'hover:bg-hoverFriendsListColor');
+        newSelectedElement.classList.add('selectedFriendGradient', 'border-customBlue', 'border-l-4');
+    } else {
+        console.log(`New friend ID ${FriendId} not found in DOM.`);
+    }
+
+    openChat(FriendId);
+    selectedFriendId = FriendId;
+}
+
+
+
+
 async function loadFriends() {
     try {
         const response = await fetch('/api/friends', {
@@ -497,7 +524,6 @@ async function loadFriends() {
                 lastMessageTimeForOrder: lastMessageData.timeForOrder || ' '
             };
         }));
-        
 
 
         enrichedFriends.sort((a, b) => {
@@ -569,9 +595,10 @@ async function loadFriends() {
 
             li.appendChild(nameDetailsDiv);
             li.appendChild(dropdownDiv);
+            li.id = `friend-${friend.id}`;
 
             li.addEventListener('click', () => {
-                openChat(friend.id);
+                updateSelectedFriend(friend.id);
             });
             list.appendChild(li);
         }
@@ -672,7 +699,6 @@ async function openChat(friendId, keepScrollPosition = false) {
         selectedFriendId = friendId;
         readStatusDisplayed = false;
         totalPages = 1;
-        loadFriends();
     }
 
     if (currentPage > totalPages) {
@@ -987,25 +1013,6 @@ function timeSince(date) {
     }
     return Math.floor(seconds) + "s";
 }
-
-
-
-
-function updateSelectedFriend(newSelectedFriendId) {
-    if (selectedFriendId !== null) {
-        const oldSelected = document.getElementById(`friend-${selectedFriendId}`);
-        if (oldSelected) {
-            oldSelected.className = 'h-20 px-6 hover:bg-hoverFriendsListColor cursor-pointer text-white transition-colors duration-300 flex flex-col justify-center';
-        }
-    }
-    const newSelected = document.getElementById(`friend-${newSelectedFriendId}`);
-    if (newSelected) {
-        newSelected.className = 'h-20 px-6 hover:bg-hoverFriendsListColor cursor-pointer text-white transition-colors duration-300 flex flex-col justify-center border-l-4 border-customBlue';
-    }
-    selectedFriendId = newSelectedFriendId; 
-}
-
-
 
 
 
