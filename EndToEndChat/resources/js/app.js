@@ -1,4 +1,4 @@
-// import './bootstrap';
+import './bootstrap';
 
 window.openTab = function(evt, tabName) {
 let i, tabcontent, tablinks;
@@ -346,7 +346,7 @@ function setupNameInput() {
             }
         });
     }
-    }
+}
 
 
 
@@ -471,12 +471,7 @@ async function removeFriend(friendId) {
 }
 
 
-
-
-
-
 let selectedFriendId = null;
-let readStatusDisplayed = false;
 
 
 function updateSelectedFriend(FriendId) {
@@ -521,22 +516,17 @@ async function loadFriends() {
             return {
                 ...friend,
                 lastMessageContent: lastMessageData.message || 'No messages',
-                lastMessageTimeForOrder: lastMessageData.timeForOrder || ' '
+                lastMessageTimeForOrder: lastMessageData.timeForOrder || ' ',
+                lastMessageTimeForDisplay: lastMessageData.timeForDisplay || ' '
             };
         }));
-
 
         enrichedFriends.sort((a, b) => {
             return new Date(b.lastMessageTimeForOrder) - new Date(a.lastMessageTimeForOrder);
         });
 
         for (const friend of enrichedFriends) {
-
-            const lastMessageData = await fetchLastMessage(friend.id);
-
             const li = document.createElement('li');
-
-
             li.className = `flex items-center justify-between px-6 h-20 cursor-pointer transition-colors duration-300 ${friend.id === selectedFriendId ? 'selectedFriendGradient bg-hoverFriendsListColor border-l-4 border-customBlue' : 'bg-mainBackgroundColor hover:bg-hoverFriendsListColor'}`;
 
             const nameDetailsDiv = document.createElement('div');
@@ -548,7 +538,7 @@ async function loadFriends() {
 
             const detailsDiv = document.createElement('div');
             detailsDiv.className = 'text-lastMessageColorFriendsList text-xs';
-            detailsDiv.textContent = `${lastMessageData.message} • ${lastMessageData.timeForDisplay}`;
+            detailsDiv.textContent = `${friend.lastMessageContent} • ${friend.lastMessageTimeForDisplay}`;
 
             nameDetailsDiv.appendChild(nameDiv);
             nameDetailsDiv.appendChild(detailsDiv);
@@ -562,7 +552,7 @@ async function loadFriends() {
 
             const dropdownContent = document.createElement('div');
             dropdownContent.className = 'hidden absolute right-0 w-40 bg-white shadow-lg rounded-md z-10 mt-1';
-            
+
             const removeOption = document.createElement('a');
             removeOption.href = '#';
             removeOption.className = 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md';
@@ -581,7 +571,6 @@ async function loadFriends() {
                 blockUser(friend.id);
             };
 
-
             dropdownContent.appendChild(removeOption);
             dropdownContent.appendChild(blockOption);
 
@@ -592,6 +581,24 @@ async function loadFriends() {
                 event.stopPropagation();
                 dropdownContent.classList.toggle('hidden');
             };
+
+
+            // making sure that the event listner is only acitve when dropown is triggerd
+            dropdownButton.onclick = function(event) {
+                event.stopPropagation();
+                const isHidden = dropdownContent.classList.contains('hidden');
+                dropdownContent.classList.toggle('hidden');
+
+                if (isHidden) {
+                    document.addEventListener('click', function handler(e) {
+                        if (!dropdownDiv.contains(e.target)) {
+                            dropdownContent.classList.add('hidden');
+                            document.removeEventListener(e.type, handler);
+                        }
+                    });
+                }
+            };
+
 
             li.appendChild(nameDetailsDiv);
             li.appendChild(dropdownDiv);
@@ -607,6 +614,7 @@ async function loadFriends() {
         console.error('Error loading friends:', error);
     }
 }
+
 
 
 
@@ -682,6 +690,7 @@ async function markMessageAsRead(messageId) {
 let currentPage = 1;
 let totalPages = 1;
 let isChatLoading = false;
+let lastReadMessageFound;
 
 async function openChat(friendId, keepScrollPosition = false) {
     if (isChatLoading) {
@@ -690,19 +699,15 @@ async function openChat(friendId, keepScrollPosition = false) {
     }
     isChatLoading = true;
 
-    console.log("Attempting to open chat with friend ID:", friendId);
-
     if (selectedFriendId !== friendId) {
-        console.log("Switching to new chat, clearing messages for friend ID:", selectedFriendId);
         document.querySelector('.chat-messages').innerHTML = '';
         currentPage = 1;
         selectedFriendId = friendId;
-        readStatusDisplayed = false;
         totalPages = 1;
+        lastReadMessageFound = false;
     }
 
     if (currentPage > totalPages) {
-        console.log('All messages have been loaded for friend ID:', friendId);
         isChatLoading = false;
         return;
     }
@@ -717,20 +722,17 @@ async function openChat(friendId, keepScrollPosition = false) {
         });
         const result = await response.json();
         if (!result.data || result.data.length === 0) {
-            console.log('No more messages to load for friend ID:', friendId);
             isChatLoading = false;
             return;
         }
 
         currentPage += 1;
         totalPages = result.last_page;
-        console.log("Loaded messages page:", currentPage - 1, "for friend ID:", friendId);
 
         const messages = result.data;
         const privateKey = await getPrivateKey();
         const messagesContainer = document.querySelector('.chat-messages');
         let oldScrollHeight = messagesContainer.scrollHeight;
-        let lastReadMessageFound = false;
         let lastReadMessageElement = null;
 
         for (let i = 0; i < messages.length; i++) {
@@ -744,29 +746,33 @@ async function openChat(friendId, keepScrollPosition = false) {
             messageText.textContent = decryptedMessage;
 
             messageElement.appendChild(messageText);
+            messagesContainer.prepend(messageElement);
 
+            // margin isnt consistant without for some reason lol
+            messageElement.style.marginBottom = '0.25rem';
+            
             if (message.sender_id === authUserId) {
                 messageElement.className = 'chat-msg mr-2 owner dark:bg-blue-600 dark:text-white p-3 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-none max-w-2xl ml-auto mb-1';
+        
                 if (message.is_read && !lastReadMessageFound) {
-                    lastReadMessageFound = true;
                     lastReadMessageElement = messageElement;
                 }
             } else {
                 messageElement.className = 'chat-msg received bg-gray-200 dark:bg-gray-700 text-black dark:text-white p-3 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl rounded-bl-none max-w-2xl mr-auto mb-1';
             }
-
-            messagesContainer.prepend(messageElement);
-
+            
             if (message.recipient_id === authUserId && !message.is_read) {
                 markMessageAsRead(message.id);
             }
-        }
 
-        if (lastReadMessageElement) {
-            const readIndicator = document.createElement('div');
-            readIndicator.textContent = 'Message seen';
-            readIndicator.className = 'text-xs text-gray-500 ml-auto mr-4';
-            lastReadMessageElement.parentNode.insertBefore(readIndicator, lastReadMessageElement.nextSibling);
+
+            if (lastReadMessageElement && !lastReadMessageFound) {
+                lastReadMessageFound = true;
+                const readIndicator = document.createElement('div');
+                readIndicator.textContent = 'Message seen';
+                readIndicator.className = 'text-xs text-gray-500 ml-auto mr-4';
+                lastReadMessageElement.parentNode.insertBefore(readIndicator, lastReadMessageElement.nextSibling);
+            }
         }
 
         if (keepScrollPosition) {
@@ -780,8 +786,6 @@ async function openChat(friendId, keepScrollPosition = false) {
         isChatLoading = false;
     }
 }
-
-
 
 
 async function getPublicKeyById(userId) {
