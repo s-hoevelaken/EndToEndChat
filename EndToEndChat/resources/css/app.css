@@ -7,6 +7,47 @@
 }
 
 
+.greyTextColor {
+    color: #CECECF;
+}
+
+.msgSeen {
+    font-size: 0.75rem; /* Tailwind: text-xs */
+    color: #6b7280; /* Tailwind: text-gray-500 */
+    margin-left: auto; /* Tailwind: ml-auto */
+    margin-right: 1rem; /* Tailwind: mr-4 */
+    display: flex; /* Ensure flex container for justify-end to work */
+    justify-content: flex-end; /* Tailwind: justify-end */
+}
+
+
+.chat-msg-sender {
+    margin-right: 0.5rem; 
+    padding: 0.75rem; 
+    border-top-left-radius: 1rem; 
+    border-top-right-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 0; 
+    max-width: 42rem;
+    margin-left: auto; 
+    margin-bottom: 0.25rem;
+    background-color: #0086ff; 
+    color: white;
+}
+
+.chat-msg-receiver {
+    color: black; 
+    padding: 0.75rem; 
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem; 
+    border-bottom-right-radius: 1rem;
+    border-bottom-left-radius: 0; 
+    max-width: 42rem; 
+    margin-right: auto;
+    margin-bottom: 0.25rem; 
+}
+
+
 #inputContainer .form__field,
 #inputContainer .form__field:focus {
     background-color: #27292D;
@@ -208,8 +249,10 @@ html, body {
 #animationButton.square {
     font-family: 'Arial', sans-serif;
     color: #fff;
-    height: 600px;
-    width: 400px;
+    height: 37rem;
+    width: 27rem;
+    /* height: 600px;
+    width: 400px; */
     background-color: #27292D;
     border-radius: 16px;
     display: flex;
@@ -221,6 +264,13 @@ html, body {
     box-sizing: border-box;
     left: calc(20%);
     transform: none;
+}
+
+
+@media (max-width: 500px) {
+    #animationButton.square {
+        width: 20rem;
+    }
 }
 
 #animationButton.square .text {
@@ -272,4 +322,7 @@ html, body {
 
 .selectedFriendGradient {
     background: linear-gradient(90deg, hsla(223, 7%, 19%, 1) 0%, hsla(220, 7%, 16%, 1) 100%);
+    border-left-width: 4px; /* Tailwind: border-l-4 */
+    border-left-color: #0086ff; /* Assuming custom blue color */
+    border-left-style: solid; /* Ensure the left border is solid */
 }
