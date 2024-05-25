@@ -9,8 +9,8 @@ I also used a Initialization Vector (IV) even though this wasnt really needed, s
 
 ## Screenshots
 
-<img src="../screenshots/chat%20screenshot.png" alt="Chat Screenshot" width="800"/>
-<img src="../screenshots/friends%20request%20screenshot.png" alt="Friends Request Screenshot" width="800"/>
+<img src="screenshots/chat screenshot.png" alt="Chat Screenshot" width="800"/>
+<img src="screenshots/friends request screenshot.png" alt="Friends Request Screenshot" width="800"/>
 
 
 ## Features
@@ -35,10 +35,8 @@ I also used a Initialization Vector (IV) even though this wasnt really needed, s
 ## How to run the project
 
 ### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd EndToEndChat
-```
+You can clone the repo from the green '<> code' button
+
 ### 2. Install composer
 Composer has to be installed on your device already.
 ```bash
